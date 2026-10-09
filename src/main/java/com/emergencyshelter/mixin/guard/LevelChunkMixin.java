@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.LoadGuard;
 import com.emergencyshelter.world.TickGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -33,7 +34,14 @@ public abstract class LevelChunkMixin {
     private <T extends BlockEntity> BlockEntityTicker<T> emergencyshelter$skipFrozen(BlockState state, Level level, BlockEntityType<T> type,
                                                                                     Operation<BlockEntityTicker<T>> original,
                                                                                     @Local(argsOnly = true) BlockEntity blockEntity) {
-        if (TickGuard.isFrozen(level, blockEntity)) {
+        boolean frozen;
+        try {
+            frozen = TickGuard.isFrozen(level, blockEntity);
+        } catch (Throwable own) {
+            Defense.log("TickGuard.isFrozen", own);
+            frozen = false;
+        }
+        if (frozen) {
             return null;
         }
         return original.call(state, level, type);
@@ -42,7 +50,11 @@ public abstract class LevelChunkMixin {
     /** 方块被拆除或替换：停止运行的记录随之作废。 */
     @Inject(method = "removeBlockEntity", at = @At("HEAD"))
     private void emergencyshelter$onRemove(BlockPos pos, CallbackInfo ci) {
-        TickGuard.onBlockEntityRemoved(level, pos);
+        try {
+            TickGuard.onBlockEntityRemoved(level, pos);
+        } catch (Throwable own) {
+            Defense.log("TickGuard.onBlockEntityRemoved", own);
+        }
     }
 
     /** 按需加载方块实体时，让读取出错的处理知道是哪个区块。 */

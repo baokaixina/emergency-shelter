@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.TickGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -19,7 +20,11 @@ public abstract class InventoryMixin {
         try {
             original.call(stack, level, entity, slot, selected);
         } catch (Throwable t) {
-            TickGuard.onItemTickFailure((Inventory) (Object) this, stack, t);
+            try {
+                TickGuard.onItemTickFailure((Inventory) (Object) this, stack, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

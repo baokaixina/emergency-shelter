@@ -25,6 +25,11 @@ public final class ClientReportHandler {
     /** 加载完成后打开的第一个界面：说明启动成功；如有需要弹出启动报告。 */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientReportHandler.onScreenOpening", () -> onScreenOpeningUnsafe(event));
+    }
+
+    private static void onScreenOpeningUnsafe(ScreenEvent.Opening event) {
         Screen screen = event.getNewScreen();
         if (screen == null || screen instanceof ReportScreen) {
             return;

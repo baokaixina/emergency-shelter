@@ -26,12 +26,18 @@ public final class ShelterKeys {
 
         @SubscribeEvent
         public static void register(RegisterKeyMappingsEvent event) {
-            event.register(OPEN_BOX);
-            NeoForge.EVENT_BUS.addListener(ShelterKeys::onClientTick);
+            com.emergencyshelter.Defense.quietly("ShelterKeys.register", () -> {
+                event.register(OPEN_BOX);
+                NeoForge.EVENT_BUS.addListener(ShelterKeys::onClientTick);
+            });
         }
     }
 
     private static void onClientTick(ClientTickEvent.Post event) {
+        com.emergencyshelter.Defense.quietly("ShelterKeys.onClientTick", ShelterKeys::checkKeys);
+    }
+
+    private static void checkKeys() {
         Minecraft minecraft = Minecraft.getInstance();
         while (OPEN_BOX.consumeClick()) {
             if (minecraft.player != null && minecraft.screen == null) {

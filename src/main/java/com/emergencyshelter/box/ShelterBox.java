@@ -27,6 +27,11 @@ public final class ShelterBox {
     /** 登录时：把背包和末影箱里的占位物品移进避险箱，并告诉玩家。 */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ShelterBox.onLogin", () -> onLoginUnsafe(event));
+    }
+
+    private static void onLoginUnsafe(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
@@ -51,6 +56,11 @@ public final class ShelterBox {
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ShelterBox.onLogout", () -> onLogoutUnsafe(event));
+    }
+
+    private static void onLogoutUnsafe(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && player.containerMenu instanceof ChestMenu menu
                 && menu.getContainer() instanceof BoxPageContainer) {
             player.closeContainer();

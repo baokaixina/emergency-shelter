@@ -155,7 +155,12 @@ public final class ClientSession {
         List<String> out = new ArrayList<>();
         JsonObject state = readState();
         if (state.has("lastGoodPacks") && state.get("lastGoodPacks").isJsonArray()) {
-            state.getAsJsonArray("lastGoodPacks").forEach(e -> out.add(e.getAsString()));
+            state.getAsJsonArray("lastGoodPacks").forEach(e -> {
+                // 状态文件可能被手改或损坏：只取字符串
+                if (e.isJsonPrimitive()) {
+                    out.add(e.getAsString());
+                }
+            });
         }
         return out;
     }
@@ -164,6 +169,11 @@ public final class ClientSession {
 
     @SubscribeEvent
     public static void onLogin(ClientPlayerNetworkEvent.LoggingIn event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientSession.onLogin", () -> onLoginUnsafe(event));
+    }
+
+    private static void onLoginUnsafe(ClientPlayerNetworkEvent.LoggingIn event) {
         if (enabled()) {
             write("WORLD");
         }
@@ -171,6 +181,11 @@ public final class ClientSession {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientSession.onLogout", () -> onLogoutUnsafe(event));
+    }
+
+    private static void onLogoutUnsafe(ClientPlayerNetworkEvent.LoggingOut event) {
         if (enabled()) {
             write("MENU");
         }
@@ -178,6 +193,11 @@ public final class ClientSession {
 
     @SubscribeEvent
     public static void onTick(ClientTickEvent.Post event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientSession.onTick", () -> onTickUnsafe(event));
+    }
+
+    private static void onTickUnsafe(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         List<String> packs = pendingPacks;
         if (packs != null && mc.getOverlay() == null
@@ -194,6 +214,11 @@ public final class ClientSession {
 
     @SubscribeEvent
     public static void onShutdown(GameShuttingDownEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientSession.onShutdown", () -> onShutdownUnsafe(event));
+    }
+
+    private static void onShutdownUnsafe(GameShuttingDownEvent event) {
         // 正常退出：不需要下次启动时处理
         shuttingDown = true;
         try {

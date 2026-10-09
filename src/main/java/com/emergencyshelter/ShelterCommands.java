@@ -43,6 +43,11 @@ public final class ShelterCommands {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ShelterCommands.onRegisterCommands", () -> onRegisterCommandsUnsafe(event));
+    }
+
+    private static void onRegisterCommandsUnsafe(RegisterCommandsEvent event) {
         register(event.getDispatcher());
     }
 

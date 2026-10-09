@@ -16,6 +16,11 @@ public final class PlaceholderProtection {
 
     @SubscribeEvent
     public static void onBreak(BlockEvent.BreakEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("PlaceholderProtection.onBreak", () -> onBreakUnsafe(event));
+    }
+
+    private static void onBreakUnsafe(BlockEvent.BreakEvent event) {
         if (event.getState().is(ShelterRegistries.PLACEHOLDER_BLOCK.get()) && !event.getPlayer().isShiftKeyDown()) {
             event.setCanceled(true);
             event.getPlayer().displayClientMessage(Component.translatable("block.emergencyshelter.placeholder_block.protected")

@@ -14,6 +14,11 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ClientSetup.registerRenderers", () -> registerRenderersUnsafe(event));
+    }
+
+    private static void registerRenderersUnsafe(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ShelterRegistries.PLACEHOLDER_ENTITY.get(), PlaceholderEntityRenderer::new);
     }
 }

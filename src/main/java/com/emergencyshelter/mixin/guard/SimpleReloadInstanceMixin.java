@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.ReloadGuard;
 import com.llamalad7.mixinextras.sugar.Local;
 import java.util.List;
@@ -22,6 +23,6 @@ public abstract class SimpleReloadInstanceMixin {
             index = 2)
     private PreparableReloadListener emergencyshelter$guardListener(PreparableReloadListener listener,
                                                                      @Local(argsOnly = true) List<PreparableReloadListener> listeners) {
-        return ReloadGuard.guard(listener, listeners);
+        return Defense.quietly("ReloadGuard.guard", () -> ReloadGuard.guard(listener, listeners), listener);
     }
 }

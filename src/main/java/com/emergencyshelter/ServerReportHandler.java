@@ -26,6 +26,11 @@ public final class ServerReportHandler {
 
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ServerReportHandler.onServerAboutToStart", () -> onServerAboutToStartUnsafe(event));
+    }
+
+    private static void onServerAboutToStartUnsafe(ServerAboutToStartEvent event) {
         notified.clear();
         guardNotified.clear();
         if (event.getServer().isDedicatedServer()) {
@@ -36,6 +41,11 @@ public final class ServerReportHandler {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ServerReportHandler.onServerStarted", () -> onServerStartedUnsafe(event));
+    }
+
+    private static void onServerStartedUnsafe(ServerStartedEvent event) {
         if (!event.getServer().isDedicatedServer()) {
             return;
         }
@@ -63,6 +73,11 @@ public final class ServerReportHandler {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("ServerReportHandler.onPlayerLoggedIn", () -> onPlayerLoggedInUnsafe(event));
+    }
+
+    private static void onPlayerLoggedInUnsafe(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }

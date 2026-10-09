@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.salvage.SalvagingItemCodec;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.serialization.Codec;
@@ -17,13 +18,14 @@ public abstract class ItemStackMixin {
             target = "Lcom/mojang/serialization/Codec;lazyInitialized(Ljava/util/function/Supplier;)Lcom/mojang/serialization/Codec;",
             ordinal = 0))
     private static Codec<ItemStack> emergencyshelter$wrapCodec(Codec<ItemStack> original) {
-        return SalvagingItemCodec.wrap(original, false);
+        // 这里在 ItemStack 类初始化时运行：出错会让整个游戏无法启动，必须退回原版编解码器
+        return Defense.quietly("SalvagingItemCodec.wrap", () -> SalvagingItemCodec.wrap(original, false), original);
     }
 
     @ModifyExpressionValue(method = "<clinit>", at = @At(value = "INVOKE",
             target = "Lcom/mojang/serialization/Codec;lazyInitialized(Ljava/util/function/Supplier;)Lcom/mojang/serialization/Codec;",
             ordinal = 1))
     private static Codec<ItemStack> emergencyshelter$wrapSingleCodec(Codec<ItemStack> original) {
-        return SalvagingItemCodec.wrap(original, true);
+        return Defense.quietly("SalvagingItemCodec.wrapSingle", () -> SalvagingItemCodec.wrap(original, true), original);
     }
 }

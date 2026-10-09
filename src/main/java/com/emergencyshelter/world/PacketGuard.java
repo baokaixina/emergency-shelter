@@ -71,18 +71,23 @@ public final class PacketGuard {
             if (TickGuard.fatal(t)) {
                 throw WorldGuard.sneakyThrow(t);
             }
-            report(level, be, "生成同步数据时出错，本次不发送：" + WorldGuard.message(t), t);
+            com.emergencyshelter.Defense.quietly("PacketGuard.report", () -> report(level, be, "生成同步数据时出错，本次不发送：" + WorldGuard.message(t), t));
             return new CompoundTag();
         }
         if (tag == null) {
             return null;
         }
-        long size = tag.sizeInBytes();
-        if (size <= BLOCK_ENTITY_LIMIT || limitsRaised()) {
-            return tag;
+        try {
+            long size = tag.sizeInBytes();
+            if (size <= BLOCK_ENTITY_LIMIT || limitsRaised()) {
+                return tag;
+            }
+            report(level, be, "同步数据 " + mb(size) + "，超过客户端 2 MB 的读取上限（原版会让靠近这里的玩家被踢出），没有发送给客户端（服务端的数据完整保留）", null);
+            return new CompoundTag();
+        } catch (Throwable own) {
+            com.emergencyshelter.Defense.log("PacketGuard.updateTag", own);
+            return tag; // 照原版发送
         }
-        report(level, be, "同步数据 " + mb(size) + "，超过客户端 2 MB 的读取上限（原版会让靠近这里的玩家被踢出），没有发送给客户端（服务端的数据完整保留）", null);
-        return new CompoundTag();
     }
 
     private static void report(ServerLevel level, BlockEntity be, String detail, @Nullable Throwable error) {

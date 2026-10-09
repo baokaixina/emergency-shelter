@@ -208,10 +208,15 @@ public final class RenderGuard {
 
     private static void notify(String kind, String what, @Nullable String where, Throwable error) {
         failures++;
-        String mod = Culprits.modOf(error);
+        // 先去重：同一个东西每帧都出错时（例如鼠标停在出错的提示框上），不能每帧都去分析堆栈
         if (!REPORTED.add(kind + " " + what)) {
             return;
         }
+        com.emergencyshelter.Defense.quietly("RenderGuard.notify", () -> notifyFirst(kind, what, where, error));
+    }
+
+    private static void notifyFirst(String kind, String what, @Nullable String where, Throwable error) {
+        String mod = Culprits.modOf(error);
         String modName = mod == null ? "?" : Culprits.displayName(mod);
         EmergencyShelter.LOGGER.error("[紧急避险] {} {}{} 渲染出错（模组：{}），已在本次运行中隐藏它（原版会崩溃）", kind, what,
                 where == null ? "" : " @ " + where, modName, error);
@@ -227,6 +232,11 @@ public final class RenderGuard {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("RenderGuard.onClientTick", () -> onClientTickUnsafe(event));
+    }
+
+    private static void onClientTickUnsafe(ClientTickEvent.Post event) {
         if (PENDING.isEmpty()) {
             return;
         }

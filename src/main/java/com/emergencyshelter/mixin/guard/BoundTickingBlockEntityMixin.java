@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.HangGuard;
 import com.emergencyshelter.world.TickGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -23,7 +24,11 @@ public abstract class BoundTickingBlockEntityMixin {
         try {
             original.call(ticker, level, pos, state, blockEntity);
         } catch (Throwable t) {
-            TickGuard.onBlockEntityTickFailure(level, pos, blockEntity, t);
+            try {
+                TickGuard.onBlockEntityTickFailure(level, pos, blockEntity, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         } finally {
             HangGuard.end(slot);
         }

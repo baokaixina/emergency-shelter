@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -25,7 +26,11 @@ public abstract class GuiLayerManagerMixin {
         try {
             original.call(layer, graphics, partialTick);
         } catch (Throwable t) {
-            RenderGuard.onLayerFailure(layer, String.valueOf(named.name()), t, graphics.pose(), depth);
+            try {
+                RenderGuard.onLayerFailure(layer, String.valueOf(named.name()), t, graphics.pose(), depth);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

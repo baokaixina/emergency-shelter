@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DataRescue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -22,6 +23,7 @@ public abstract class PlayerDataStorageMixin {
     @WrapMethod(method = "load(Lnet/minecraft/world/entity/player/Player;)Ljava/util/Optional;")
     private Optional<CompoundTag> emergencyshelter$load(Player player, Operation<Optional<CompoundTag>> original) {
         Optional<CompoundTag> result = original.call(player);
-        return result.isPresent() ? result : DataRescue.onPlayerFilesUnreadable(playerDir, player);
+        return result.isPresent() ? result
+                : Defense.quietly("DataRescue.onPlayerFilesUnreadable", () -> DataRescue.onPlayerFilesUnreadable(playerDir, player), result);
     }
 }

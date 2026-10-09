@@ -1,6 +1,8 @@
 package com.emergencyshelter.salvage;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.EmergencyShelter;
+import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import java.io.BufferedReader;
 import java.util.ArrayList;
@@ -55,10 +57,17 @@ public final class LenientRegistries {
                                              List<RegistryDataLoader.RegistryData<?>> data,
                                              Operation<RegistryAccess.Frozen> original) {
         Set<ResourceLocation> excluded = new LinkedHashSet<>();
+        // 第一次的错误：放弃时原样抛出它（和原版一样），而不是重试过程中出现的其它错误
+        IllegalStateException first = null;
         for (int attempt = 0; ; attempt++) {
             CAPTURED.remove();
+            ResourceManager manager;
             try {
-                ResourceManager manager = excluded.isEmpty() ? resourceManager : new FilteringResourceManager(resourceManager, excluded);
+                manager = excluded.isEmpty() ? resourceManager : new FilteringResourceManager(resourceManager, excluded);
+            } catch (Throwable own) {
+                throw Defense.fallback(first, own);
+            }
+            try {
                 RegistryAccess.Frozen result = original.call(manager, access, data);
                 if (!excluded.isEmpty()) {
                     for (ResourceLocation file : excluded) {
@@ -67,17 +76,33 @@ public final class LenientRegistries {
                     EmergencyShelter.LOGGER.warn("[紧急避险] 跳过 {} 个引用了缺失内容的数据包条目后，注册表加载成功：{}", excluded.size(), excluded);
                 }
                 return result;
-            } catch (IllegalStateException e) {
+            } catch (Throwable t) {
                 Map<ResourceKey<?>, Exception> errors = CAPTURED.get();
                 CAPTURED.remove();
-                if (errors == null || errors.isEmpty() || attempt >= MAX_ATTEMPTS) {
-                    throw e;
+                if (first == null) {
+                    if (!(t instanceof IllegalStateException e)) {
+                        throw WorldGuard.sneakyThrow(t); // 不是注册表条目的问题，不归这里管
+                    }
+                    first = e;
+                } else {
+                    first.addSuppressed(t);
+                    if (!(t instanceof IllegalStateException)) {
+                        throw first;
+                    }
                 }
-                Set<ResourceLocation> more = findCulprits(resourceManager, data, errors);
-                more.removeAll(excluded);
+                if (errors == null || errors.isEmpty() || attempt >= MAX_ATTEMPTS) {
+                    throw first;
+                }
+                Set<ResourceLocation> more;
+                try {
+                    more = findCulprits(resourceManager, data, errors);
+                    more.removeAll(excluded);
+                } catch (Throwable own) {
+                    throw Defense.fallback(first, own);
+                }
                 if (more.isEmpty()) {
                     EmergencyShelter.LOGGER.error("[紧急避险] 注册表加载失败，且无法自动定位到出问题的数据包条目");
-                    throw e;
+                    throw first;
                 }
                 EmergencyShelter.LOGGER.warn("[紧急避险] 数据包加载失败（第 {} 次），将跳过这些条目后重试：{}", attempt + 1, more);
                 excluded.addAll(more);

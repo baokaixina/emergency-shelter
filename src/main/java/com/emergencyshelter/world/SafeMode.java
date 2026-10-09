@@ -61,6 +61,11 @@ public final class SafeMode {
     /** 服务端开始运行第一刻之前（区块已经加载，但还没有任何东西运行过）。 */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStarting(ServerStartingEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("SafeMode.onServerStarting", () -> onServerStartingUnsafe(event));
+    }
+
+    private static void onServerStartingUnsafe(ServerStartingEvent event) {
         if (!requested()) {
             return;
         }
@@ -76,6 +81,11 @@ public final class SafeMode {
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("SafeMode.onLogin", () -> onLoginUnsafe(event));
+    }
+
+    private static void onLoginUnsafe(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && active(player.server) && ServerReportHandler.canViewReport(player)) {
             player.sendSystemMessage(notice());
         }

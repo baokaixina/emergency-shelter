@@ -106,6 +106,11 @@ public final class WorldGuard {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("WorldGuard.onServerAboutToStart", () -> onServerAboutToStartUnsafe(event));
+    }
+
+    private static void onServerAboutToStartUnsafe(ServerAboutToStartEvent event) {
         MinecraftServer s = event.getServer();
         server = s;
         worldRoot = s.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize();
@@ -164,6 +169,11 @@ public final class WorldGuard {
     /** 主世界创建后、加载任何区块之前：处理上次卡住导致游戏被关闭的东西。 */
     @SubscribeEvent
     public static void onLevelLoad(LevelEvent.Load event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("WorldGuard.onLevelLoad", () -> onLevelLoadUnsafe(event));
+    }
+
+    private static void onLevelLoadUnsafe(LevelEvent.Load event) {
         if (event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD && enabled(s -> s.hangGuard)) {
             ShelterWorldData data = ShelterWorldData.get();
             Path root = worldRoot;
@@ -175,6 +185,11 @@ public final class WorldGuard {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("WorldGuard.onServerStarted", () -> onServerStartedUnsafe(event));
+    }
+
+    private static void onServerStartedUnsafe(ServerStartedEvent event) {
         runningSince = System.currentTimeMillis();
         writeSession("RUNNING", 0);
         Path root = worldRoot;
@@ -185,6 +200,11 @@ public final class WorldGuard {
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("WorldGuard.onServerStopped", () -> onServerStoppedUnsafe(event));
+    }
+
+    private static void onServerStoppedUnsafe(ServerStoppedEvent event) {
         HangGuard.stop();
         Path root = worldRoot;
         try {
@@ -282,6 +302,11 @@ public final class WorldGuard {
      * @param kind 见语言文件 emergencyshelter.guard.kind.*
      */
     public static void record(String kind, String what, @Nullable String where, String detail) {
+        // 记录只是附带工作：出了问题也不能影响正在处理的事
+        com.emergencyshelter.Defense.quietly("record " + kind, () -> recordUnsafe(kind, what, where, detail));
+    }
+
+    private static void recordUnsafe(String kind, String what, @Nullable String where, String detail) {
         Event event = new Event(kind, what, where, detail.length() > 400 ? detail.substring(0, 400) + "…" : detail, System.currentTimeMillis());
         // 同一类事件短时间内大量出现（例如几千个实体同时出错）：只单独记录前几条，其余合并成一条汇总，避免卡服
         long suppressed = 0;
@@ -382,6 +407,11 @@ public final class WorldGuard {
     }
 
     public static String message(Throwable t) {
+        // 有的模组的异常在 getMessage 里还会再出错
+        return com.emergencyshelter.Defense.quietly("message", () -> messageUnsafe(t), String.valueOf(t == null ? null : t.getClass().getName()));
+    }
+
+    private static String messageUnsafe(Throwable t) {
         Throwable root = t;
         int guard = 0;
         while (root.getCause() != null && root.getCause() != root && guard++ < 16) {

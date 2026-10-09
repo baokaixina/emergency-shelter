@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DeepNbt;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -35,20 +36,29 @@ public abstract class RegionFileStorageMixin {
         try {
             return original.call(pos);
         } catch (Throwable t) {
-            if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
-                throw WorldGuard.sneakyThrow(t);
-            }
-            byte[] raw;
-            try (DataInputStream in = getRegionFile(pos).getChunkDataInputStream(pos)) {
-                if (in == null) {
+            CompoundTag fixed;
+            try {
+                if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
                     throw WorldGuard.sneakyThrow(t);
                 }
-                raw = in.readAllBytes();
+                byte[] raw;
+                try (DataInputStream in = getRegionFile(pos).getChunkDataInputStream(pos)) {
+                    if (in == null) {
+                        throw WorldGuard.sneakyThrow(t);
+                    }
+                    raw = in.readAllBytes();
+                }
+                Path region = folder.resolve("r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
+                fixed = DeepNbt.recoverChunk(raw, region, pos.x + "," + pos.z, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
             }
-            Path region = folder.resolve("r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
-            CompoundTag fixed = DeepNbt.recoverChunk(raw, region, pos.x + "," + pos.z, t);
-            // 原始数据已经备份：把修好的版本写回去，以后不用每次都再修一遍
-            write(pos, fixed);
+            // 原始数据已经备份：把修好的版本写回去，以后不用每次都再修一遍。写不回去也没关系，下次读取时再修
+            try {
+                write(pos, fixed);
+            } catch (Throwable own) {
+                Defense.log("RegionFileStorage.write", own);
+            }
             return fixed;
         }
     }

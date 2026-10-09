@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.AttachmentStash;
 import java.util.function.Predicate;
 import net.minecraft.core.HolderLookup;
@@ -17,6 +18,6 @@ public abstract class AttachmentInternalsMixin {
     @Inject(method = "copyAttachments", at = @At("TAIL"))
     private static void emergencyshelter$copyStash(HolderLookup.Provider provider, AttachmentHolder from, AttachmentHolder to,
                                                    Predicate<AttachmentType<?>> filter, CallbackInfo ci) {
-        AttachmentStash.copy(from, to);
+        Defense.quietly("AttachmentStash.copy", () -> AttachmentStash.copy(from, to));
     }
 }

@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -21,7 +22,11 @@ public abstract class ScreenMixin {
         try {
             original.call(action, errorDesc, screenName);
         } catch (Throwable t) {
-            RenderGuard.onScreenFailure(Minecraft.getInstance().screen, t);
+            try {
+                RenderGuard.onScreenFailure(Minecraft.getInstance().screen, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 
@@ -30,7 +35,11 @@ public abstract class ScreenMixin {
         try {
             return original.call(minecraft, stack);
         } catch (Throwable t) {
-            return RenderGuard.onTooltipFailure(stack, t);
+            try {
+                return RenderGuard.onTooltipFailure(stack, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

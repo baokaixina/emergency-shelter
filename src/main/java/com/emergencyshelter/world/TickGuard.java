@@ -222,15 +222,17 @@ public final class TickGuard {
         EmergencyShelter.LOGGER.error("[紧急避险] 玩家 {} 背包里的物品 {} 运行时出错，已移进避险箱（原版会崩溃）",
                 player.getName().getString(), id, error);
         WorldGuard.backupBeforeSuppress(serverPlayer);
+        // 先放进避险箱，成功了再从背包里拿走：放不进去时物品还在背包里，不会丢
+        ShelterBoxData.get(serverPlayer.server).add(serverPlayer.getUUID(), stack.copy());
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             if (inventory.getItem(i) == stack) {
                 inventory.setItem(i, ItemStack.EMPTY);
                 break;
             }
         }
-        ShelterBoxData.get(serverPlayer.server).add(serverPlayer.getUUID(), stack.copy());
-        serverPlayer.sendSystemMessage(Component.translatable("emergencyshelter.guard.item_moved", stack.getHoverName())
-                .withStyle(ChatFormatting.GOLD).append(" ").append(com.emergencyshelter.box.ShelterBox.openLink()));
+        com.emergencyshelter.Defense.quietly("TickGuard.itemMovedMessage", () -> serverPlayer.sendSystemMessage(
+                Component.translatable("emergencyshelter.guard.item_moved", stack.getHoverName())
+                        .withStyle(ChatFormatting.GOLD).append(" ").append(com.emergencyshelter.box.ShelterBox.openLink())));
         WorldGuard.record("ITEM_MOVED", id, player.getName().getString(), WorldGuard.message(error));
     }
 }

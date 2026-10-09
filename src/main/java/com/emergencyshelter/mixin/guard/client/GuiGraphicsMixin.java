@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -38,7 +39,11 @@ public abstract class GuiGraphicsMixin {
             try {
                 return original.call(renderer, stack, level, entity, seed);
             } catch (Throwable t) {
-                RenderGuard.onItemFailure(stack, t, pose(), depth);
+                try {
+                    RenderGuard.onItemFailure(stack, t, pose(), depth);
+                } catch (Throwable own) {
+                    throw Defense.fallback(t, own);
+                }
             }
         }
         return Minecraft.getInstance().getModelManager().getMissingModel();
@@ -56,7 +61,11 @@ public abstract class GuiGraphicsMixin {
         try {
             original.call(renderer, stack, context, leftHand, pose, buffers, light, overlay, model);
         } catch (Throwable t) {
-            RenderGuard.onItemFailure(stack, t, pose, depth);
+            try {
+                RenderGuard.onItemFailure(stack, t, pose, depth);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 
@@ -67,7 +76,11 @@ public abstract class GuiGraphicsMixin {
         try {
             original.call(font, components, mouseX, mouseY, positioner);
         } catch (Throwable t) {
-            RenderGuard.onTooltipRenderFailure(t, pose(), depth);
+            try {
+                RenderGuard.onTooltipRenderFailure(t, pose(), depth);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

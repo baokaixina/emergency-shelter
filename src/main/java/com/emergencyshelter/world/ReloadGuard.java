@@ -68,7 +68,11 @@ public final class ReloadGuard {
                 if (error == null) {
                     return CompletableFuture.<Void>completedFuture(null);
                 }
-                onFailure(delegate, error);
+                Throwable cause = error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
+                if (cause instanceof OutOfMemoryError) {
+                    throw WorldGuard.sneakyThrow(cause); // 内存不足不能跳过，照原版处理
+                }
+                com.emergencyshelter.Defense.quietly("ReloadGuard.onFailure", () -> onFailure(delegate, error));
                 // 出错时还没走到"准备完成"这一步：替它报到，否则其它加载器会一直等它
                 return passed.get() ? CompletableFuture.<Void>completedFuture(null) : barrier.wait(null).<Void>thenApply(x -> null);
             }).thenCompose(Function.identity());
@@ -87,9 +91,6 @@ public final class ReloadGuard {
 
     private static void onFailure(PreparableReloadListener listener, Throwable error) {
         Throwable cause = error instanceof CompletionException && error.getCause() != null ? error.getCause() : error;
-        if (cause instanceof OutOfMemoryError) {
-            throw WorldGuard.sneakyThrow(cause);
-        }
         String mod = Culprits.modOf(cause);
         if (mod == null) {
             mod = Culprits.modOfClass(listener.getClass());

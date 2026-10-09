@@ -160,6 +160,11 @@ public final class WorldgenGuard {
     }
 
     private static void onFailure(String kind, String id, @Nullable ServerLevel level, ChunkPos chunk, Throwable t) {
+        // 只是记录：出错也照样跳过这一步，区块照常生成
+        com.emergencyshelter.Defense.quietly("WorldgenGuard.onFailure", () -> report(kind, id, level, chunk, t));
+    }
+
+    private static void report(String kind, String id, @Nullable ServerLevel level, ChunkPos chunk, Throwable t) {
         int n = FAILURES.computeIfAbsent(kind + " " + id, k -> new AtomicInteger()).incrementAndGet();
         String mod = Culprits.modOf(t);
         String where = level == null ? chunk.toString()

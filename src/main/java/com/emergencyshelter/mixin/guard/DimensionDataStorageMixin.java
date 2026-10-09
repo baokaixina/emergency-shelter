@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DataRescue;
 import com.emergencyshelter.world.DeepNbt;
 import com.emergencyshelter.world.WorldGuard;
@@ -41,13 +42,16 @@ public abstract class DimensionDataStorageMixin {
     private SavedData emergencyshelter$readSavedData(BiFunction<CompoundTag, HolderLookup.Provider, SavedData> reader, DataFixTypes dataFixType,
                                                      String filename, Operation<SavedData> original) {
         SavedData result = original.call(reader, dataFixType, filename);
-        if (DeepNbt.takeRecovered() && result != null) {
-            result.setDirty(); // 读出的是修好的版本：下次保存时写回去
-        }
+        Defense.quietly("DeepNbt.takeRecovered", () -> {
+            if (DeepNbt.takeRecovered() && result != null) {
+                result.setDirty(); // 读出的是修好的版本：下次保存时写回去
+            }
+        });
         if (result != null) {
             return result;
         }
-        return DataRescue.onSavedDataNull(dataFolder, filename, () -> original.call(reader, dataFixType, filename));
+        return Defense.quietly("DataRescue.onSavedDataNull",
+                () -> DataRescue.onSavedDataNull(dataFolder, filename, () -> original.call(reader, dataFixType, filename)), null);
     }
 
     @WrapMethod(method = "readTagFromDisk")
@@ -56,11 +60,15 @@ public abstract class DimensionDataStorageMixin {
         try {
             return original.call(filename, dataFixType, version);
         } catch (Throwable t) {
-            if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
-                throw WorldGuard.sneakyThrow(t);
+            try {
+                if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
+                    throw WorldGuard.sneakyThrow(t);
+                }
+                CompoundTag tag = DeepNbt.recoverFile(new File(dataFolder, filename + ".dat").toPath(), t);
+                return dataFixType == null ? tag : dataFixType.update(fixerUpper, tag, NbtUtils.getDataVersion(tag, 1343), version);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
             }
-            CompoundTag tag = DeepNbt.recoverFile(new File(dataFolder, filename + ".dat").toPath(), t);
-            return dataFixType == null ? tag : dataFixType.update(fixerUpper, tag, NbtUtils.getDataVersion(tag, 1343), version);
         }
     }
 }

@@ -98,11 +98,12 @@ public final class DataRescue {
             return;
         }
         String name = player.getGameProfile().getName();
-        CompoundTag stash = tag.getCompound("NeoForgeData").getCompound(PLAYER_STASH);
+        CompoundTag stash = com.emergencyshelter.Defense.quietly("DataRescue.stash",
+                () -> tag.getCompound("NeoForgeData").getCompound(PLAYER_STASH), new CompoundTag());
         if (!stash.isEmpty()) {
             // 上次暂存的模组数据：放回去再试
-            CompoundTag merged = unstash(tag, stash);
-            if (attempt(player, merged, original) == null) {
+            CompoundTag merged = com.emergencyshelter.Defense.quietly("DataRescue.unstash", () -> unstash(tag, stash), null);
+            if (merged != null && attempt(player, merged, original) == null) {
                 EmergencyShelter.LOGGER.info("[紧急避险] 玩家 {} 之前暂存的模组数据已恢复", name);
                 WorldGuard.record("PLAYER_RESTORED", name, null, "之前暂存的模组数据已恢复");
                 return;
@@ -112,6 +113,15 @@ public final class DataRescue {
         if (error == null) {
             return;
         }
+        try {
+            rescuePlayer(player, tag, stash, error, original);
+        } catch (Throwable own) {
+            throw com.emergencyshelter.Defense.fallback(error, own);
+        }
+    }
+
+    private static void rescuePlayer(ServerPlayer player, CompoundTag tag, CompoundTag stash, Throwable error, Operation<Void> original) {
+        String name = player.getGameProfile().getName();
         String saved = WorldGuard.quarantineNbt("players/" + player.getStringUUID() + ".dat", tag);
         EmergencyShelter.LOGGER.error("[紧急避险] 读取玩家 {} 的数据时出错（原版会崩溃），原始数据已保存到 {}", name, saved, error);
 

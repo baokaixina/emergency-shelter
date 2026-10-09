@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.salvage.ChunkSalvage;
 import com.emergencyshelter.world.ChunkRescue;
 import com.emergencyshelter.world.LoadGuard;
@@ -28,7 +29,7 @@ public abstract class ChunkSerializerMixin {
     @Inject(method = "read", at = @At("HEAD"))
     private static void emergencyshelter$preprocess(ServerLevel level, PoiManager poiManager, RegionStorageInfo regionStorageInfo,
                                                     ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
-        ChunkSalvage.preprocess(pos, tag);
+        Defense.quietly("ChunkSalvage.preprocess", () -> ChunkSalvage.preprocess(pos, tag));
     }
 
     /** 区块读取出错（原版会重新生成这个区块）：去掉模组附加的数据再试。 */
@@ -50,7 +51,11 @@ public abstract class ChunkSerializerMixin {
         try {
             return original.call(bus, event);
         } catch (Throwable t) {
-            ChunkRescue.onLoadEventFailure(event, t);
+            try {
+                ChunkRescue.onLoadEventFailure(event, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
             return event;
         }
     }
@@ -58,6 +63,6 @@ public abstract class ChunkSerializerMixin {
     /** 区块里的方块实体加载时，让读取出错的处理知道是哪个区块。 */
     @ModifyReturnValue(method = "postLoadChunk", at = @At("RETURN"))
     private static LevelChunk.PostLoadProcessor emergencyshelter$wrapPostLoad(LevelChunk.PostLoadProcessor processor) {
-        return LoadGuard.wrapPostLoad(processor);
+        return Defense.quietly("LoadGuard.wrapPostLoad", () -> LoadGuard.wrapPostLoad(processor), processor);
     }
 }

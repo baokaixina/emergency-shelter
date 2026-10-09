@@ -28,6 +28,11 @@ public final class Culprits {
     /** 从最深的 cause 开始找第一个属于模组的栈帧，返回模组 id。 */
     @Nullable
     public static String modOf(Throwable error) {
+        return com.emergencyshelter.Defense.quietly("modOf", () -> modOfUnsafe(error), null);
+    }
+
+    @Nullable
+    private static String modOfUnsafe(Throwable error) {
         List<Throwable> chain = new ArrayList<>();
         for (Throwable t = error; t != null && chain.size() < 16 && !chain.contains(t); t = t.getCause()) {
             chain.add(t);
@@ -54,8 +59,10 @@ public final class Culprits {
 
     @Nullable
     public static String modOfClass(Class<?> type) {
-        Module module = type.getModule();
-        return module == null ? null : modOfModule(module.getName());
+        return com.emergencyshelter.Defense.quietly("modOfClass", () -> {
+            Module module = type.getModule();
+            return module == null ? null : modOfModule(module.getName());
+        }, null);
     }
 
     @Nullable
@@ -95,6 +102,10 @@ public final class Culprits {
 
     /** 从异常信息和堆栈里找出出错的脚本位置（KubeJS / CraftTweaker），找不到返回空字符串。 */
     public static String scriptRefs(Throwable error) {
+        return com.emergencyshelter.Defense.quietly("scriptRefs", () -> scriptRefsUnsafe(error), "");
+    }
+
+    private static String scriptRefsUnsafe(Throwable error) {
         StringBuilder text = new StringBuilder();
         for (Throwable t = error; t != null && text.length() < 20000; t = t.getCause() == t ? null : t.getCause()) {
             text.append(t.getMessage()).append('\n');

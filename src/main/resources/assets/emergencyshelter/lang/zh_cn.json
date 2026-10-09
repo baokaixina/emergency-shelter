@@ -128,6 +128,7 @@
   "emergencyshelter.guard.kind.CHUNK_TRIMMED": "%s 的数据包超过联机上限，已去掉部分方块实体的显示数据后发送",
   "emergencyshelter.guard.kind.PACKET_SKIPPED": "数据包 %s 超过联机上限，已丢弃这一个，玩家没有被断开连接",
   "emergencyshelter.guard.kind.DATA_RELOAD_SKIPPED": "加载数据时 %s 出错，已跳过它，其余数据照常加载",
+  "emergencyshelter.guard.kind.RECIPE_SKIPPED": "配方 %s 读取出错，已跳过这一条，其余配方照常加载",
   "emergencyshelter.guard.kind.DATA_LARGE": "存档数据 %s 异常地大",
   "emergencyshelter.guard.kind.DATA_GROWTH": "存档数据 %s 涨得很快",
   "emergencyshelter.guard.kind.CHUNK_OVERSIZED": "区块 %s 的数据过大",

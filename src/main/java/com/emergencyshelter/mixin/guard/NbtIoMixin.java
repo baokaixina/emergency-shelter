@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DeepNbt;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -19,10 +20,14 @@ public abstract class NbtIoMixin {
         try {
             return original.call(path, accounter);
         } catch (Throwable t) {
-            if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
-                throw WorldGuard.sneakyThrow(t);
+            try {
+                if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
+                    throw WorldGuard.sneakyThrow(t);
+                }
+                return DeepNbt.recoverFile(path, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
             }
-            return DeepNbt.recoverFile(path, t);
         }
     }
 }

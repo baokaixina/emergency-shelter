@@ -1,5 +1,7 @@
 package com.emergencyshelter.mixin.guard;
 
+import net.minecraft.network.SkipPacketException;
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.PacketGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -26,7 +28,16 @@ public abstract class PacketEncoderMixin {
         int start = out.writerIndex();
         original.call(ctx, packet, out);
         if (protocolInfo.flow() == PacketFlow.CLIENTBOUND && protocolInfo.id() == ConnectionProtocol.PLAY) {
-            PacketGuard.checkEncoded(ctx, packet, out, start, () -> original.call(ctx, packet, out));
+            try {
+                PacketGuard.checkEncoded(ctx, packet, out, start, () -> original.call(ctx, packet, out));
+            } catch (SkipPacketException e) {
+                throw e; // 有意丢弃这一个包（原版会把它当作"跳过"，不会断开连接）
+            } catch (Throwable own) {
+                // 紧急避险自己出错：重新完整编码一次，交给原版处理
+                Defense.log("PacketGuard.checkEncoded", own);
+                out.writerIndex(start);
+                original.call(ctx, packet, out);
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DataRescue;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -22,8 +23,18 @@ public abstract class LevelStorageAccessMixin {
         try {
             return original.call(useFallback);
         } catch (Throwable t) {
-            if (useFallback && WorldGuard.enabled() && DataRescue.prepareLevelDatFallback(levelDirectory.path())) {
-                return original.call(true);
+            boolean retry;
+            try {
+                retry = useFallback && WorldGuard.enabled() && DataRescue.prepareLevelDatFallback(levelDirectory.path());
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
+            if (retry) {
+                try {
+                    return original.call(true);
+                } catch (Throwable again) {
+                    t.addSuppressed(again); // 正常副本也读不出来：照原版抛出最初的错误
+                }
             }
             throw WorldGuard.sneakyThrow(t);
         }

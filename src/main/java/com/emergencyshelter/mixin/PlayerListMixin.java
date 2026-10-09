@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.salvage.LostDimension;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -20,8 +21,10 @@ public abstract class PlayerListMixin {
     private void emergencyshelter$checkDimension(ServerPlayer player, ServerLevel level, Operation<Void> original,
                                                  @Local ResourceKey<Level> savedDimension) {
         original.call(player, level);
-        if (savedDimension != null && !level.dimension().equals(savedDimension)) {
-            LostDimension.markLost(player, savedDimension);
-        }
+        Defense.quietly("LostDimension.markLost", () -> {
+            if (savedDimension != null && !level.dimension().equals(savedDimension)) {
+                LostDimension.markLost(player, savedDimension);
+            }
+        });
     }
 }

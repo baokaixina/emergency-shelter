@@ -96,16 +96,19 @@ public final class ShelterReport {
             return settings;
         }
         Settings loaded = new Settings();
-        Path file = dir().resolve("settings.json");
-        if (Files.isRegularFile(file)) {
-            try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-                Settings s = new Gson().fromJson(reader, Settings.class);
-                if (s != null) {
-                    loaded = s;
+        // 每个钩子都会问这里：这里绝不能抛出异常，读不到就用默认设置
+        try {
+            Path file = dir().resolve("settings.json");
+            if (Files.isRegularFile(file)) {
+                try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    Settings s = new Gson().fromJson(reader, Settings.class);
+                    if (s != null) {
+                        loaded = s;
+                    }
                 }
-            } catch (Exception e) {
-                EmergencyShelter.LOGGER.warn("无法读取 {}", file, e);
             }
+        } catch (Throwable e) {
+            EmergencyShelter.LOGGER.warn("[紧急避险] 无法读取设置文件 settings.json，使用默认设置", e);
         }
         loaded.worldGuard &= loaded.enabled;
         loaded.graphicsGuard &= loaded.enabled;

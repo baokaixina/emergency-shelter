@@ -44,6 +44,11 @@ public final class LostDimension {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("LostDimension.onLogin", () -> onLoginUnsafe(event));
+    }
+
+    private static void onLoginUnsafe(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }

@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.ClientSession;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -14,16 +15,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MinecraftMixin {
     @Inject(method = "reloadResourcePacks(ZLnet/minecraft/client/Minecraft$GameLoadCookie;)Ljava/util/concurrent/CompletableFuture;", at = @At("HEAD"))
     private void emergencyshelter$reloadStarted(CallbackInfoReturnable<CompletableFuture<Void>> cir) {
-        ClientSession.reloadStarted();
+        Defense.quietly("ClientSession.reloadStarted", ClientSession::reloadStarted);
     }
 
     @Inject(method = "onResourceLoadFinished", at = @At("HEAD"))
     private void emergencyshelter$reloadFinished(CallbackInfo ci) {
-        ClientSession.reloadFinished();
+        Defense.quietly("ClientSession.reloadFinished", ClientSession::reloadFinished);
     }
 
     @Inject(method = "clearResourcePacksOnError", at = @At("HEAD"))
     private void emergencyshelter$reloadFailed(CallbackInfo ci) {
-        ClientSession.reloadFailed();
+        Defense.quietly("ClientSession.reloadFailed", ClientSession::reloadFailed);
     }
 }

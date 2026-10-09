@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.HangGuard;
 import com.emergencyshelter.world.TickGuard;
 import com.emergencyshelter.world.WorldGuard;
@@ -22,7 +23,13 @@ public abstract class LevelMixin {
         try {
             original.call(consumer, entity);
         } catch (Throwable t) {
-            if (!(entity instanceof Entity e) || !TickGuard.onEntityTickFailure(level, e, t)) {
+            boolean handled;
+            try {
+                handled = entity instanceof Entity e && TickGuard.onEntityTickFailure(level, e, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
+            if (!handled) {
                 throw WorldGuard.sneakyThrow(t);
             }
         } finally {

@@ -50,6 +50,11 @@ public final class WorldBackup {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        // 事件处理出错不能让游戏崩溃
+        com.emergencyshelter.Defense.quietly("WorldBackup.onServerAboutToStart", () -> onServerAboutToStartUnsafe(event));
+    }
+
+    private static void onServerAboutToStartUnsafe(ServerAboutToStartEvent event) {
         lastBackupNote = null;
         try {
             check(event.getServer());

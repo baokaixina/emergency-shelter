@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.WorldGuard;
 import com.emergencyshelter.world.WorldgenGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -24,7 +25,11 @@ public abstract class FeatureSorterMixin {
             if (!topLevel || e.getMessage() == null || !e.getMessage().startsWith("Feature order cycle") || !WorldGuard.enabled(s -> s.worldgenGuard)) {
                 throw e;
             }
-            return WorldgenGuard.lenientOrder(sources, toFeatures, e.getMessage());
+            try {
+                return WorldgenGuard.lenientOrder(sources, toFeatures, e.getMessage());
+            } catch (Throwable own) {
+                throw Defense.fallback(e, own);
+            }
         }
     }
 }

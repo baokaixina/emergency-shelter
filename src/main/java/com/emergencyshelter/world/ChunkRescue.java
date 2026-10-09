@@ -44,47 +44,62 @@ public final class ChunkRescue {
         try {
             return original.call(level, poi, info, pos, tag);
         } catch (Throwable error) {
-            if (!WorldGuard.enabled() || error instanceof OutOfMemoryError) {
-                throw WorldGuard.sneakyThrow(error);
+            try {
+                return rescue(level, poi, info, pos, tag, original, error);
+            } catch (Throwable own) {
+                // 处理过程中紧急避险自己出错：按原版处理（原版会重新生成这个区块）
+                throw com.emergencyshelter.Defense.fallback(error, own);
             }
-            // 原版读取时不会修改这份数据，出错时它仍然是完整的
-            CompoundTag pristine = tag.copy();
-            String dim = level.dimension().location().toString().replace(':', '_');
-            String saved = WorldGuard.quarantineNbt("chunks/" + dim + "/c." + pos.x + "." + pos.z + ".nbt", pristine);
-            String where = level.dimension().location() + " " + pos.getMiddleBlockX() + ", ~, " + pos.getMiddleBlockZ();
+        }
+    }
 
-            // 先只去掉模组加在区块上的字段，不行再连同模组的附加数据一起去掉
-            CompoundTag stripped = pristine.copy();
-            CompoundTag stash = new CompoundTag();
-            for (int step = 1; step <= 2; step++) {
-                boolean removed = strip(stripped, stash, step == 2);
-                if (step == 1 && !removed) {
-                    continue;
-                }
-                RETRYING.set(step == 2);
-                try {
-                    ProtoChunk chunk = original.call(level, poi, info, pos, stripped.copy());
-                    if (!stash.isEmpty()) {
-                        stash.put("fault", WorldGuard.faultTag("CHUNK_DATA", error));
-                        CompoundTag previous = chunk.getExistingDataOrNull(ShelterRegistries.STASHED_CHUNK_DATA.get());
-                        chunk.setData(ShelterRegistries.STASHED_CHUNK_DATA.get(), mergeStash(previous, stash));
-                        EmergencyShelter.LOGGER.error("[紧急避险] 读取区块 {} 时出错（原版会重新生成这个区块），去掉模组附加的数据 {} 后读取成功，这些数据已暂存",
-                                pos, describe(stash), error);
-                        WorldGuard.record("CHUNK_DATA_STASHED", describe(stash), where, WorldGuard.message(error));
-                    } else {
-                        WorldGuard.record("CHUNK_EVENT_SKIPPED", WorldGuard.message(error), where, WorldGuard.message(error));
-                    }
-                    return chunk;
-                } catch (Throwable retry) {
-                    error.addSuppressed(retry);
-                } finally {
-                    RETRYING.set(false);
-                }
-            }
-            EmergencyShelter.LOGGER.error("[紧急避险] 区块 {} 无法读取，原版会重新生成它。原始数据已保存到 {}", pos, saved, error);
-            WorldGuard.record("CHUNK_LOST", saved == null ? "?" : saved, where, WorldGuard.message(error));
+    private static ProtoChunk rescue(ServerLevel level, PoiManager poi, RegionStorageInfo info, ChunkPos pos, CompoundTag tag,
+                                     Operation<ProtoChunk> original, Throwable error) {
+        if (!WorldGuard.enabled() || error instanceof OutOfMemoryError) {
             throw WorldGuard.sneakyThrow(error);
         }
+        // 原版读取时不会修改这份数据，出错时它仍然是完整的
+        CompoundTag pristine = tag.copy();
+        String dim = level.dimension().location().toString().replace(':', '_');
+        String saved = WorldGuard.quarantineNbt("chunks/" + dim + "/c." + pos.x + "." + pos.z + ".nbt", pristine);
+        String where = level.dimension().location() + " " + pos.getMiddleBlockX() + ", ~, " + pos.getMiddleBlockZ();
+
+        // 先只去掉模组加在区块上的字段，不行再连同模组的附加数据一起去掉
+        CompoundTag stripped = pristine.copy();
+        CompoundTag stash = new CompoundTag();
+        for (int step = 1; step <= 2; step++) {
+            boolean removed = strip(stripped, stash, step == 2);
+            if (step == 1 && !removed) {
+                continue;
+            }
+            RETRYING.set(step == 2);
+            ProtoChunk chunk;
+            try {
+                chunk = original.call(level, poi, info, pos, stripped.copy());
+            } catch (Throwable retry) {
+                error.addSuppressed(retry);
+                continue;
+            } finally {
+                RETRYING.set(false);
+            }
+            // 已经读出来了：暂存、记录出错也必须把读到的区块交出去（去掉的数据在隔离目录里还有一份）
+            com.emergencyshelter.Defense.quietly("ChunkRescue.stash", () -> {
+                if (!stash.isEmpty()) {
+                    stash.put("fault", WorldGuard.faultTag("CHUNK_DATA", error));
+                    CompoundTag previous = chunk.getExistingDataOrNull(ShelterRegistries.STASHED_CHUNK_DATA.get());
+                    chunk.setData(ShelterRegistries.STASHED_CHUNK_DATA.get(), mergeStash(previous, stash));
+                    EmergencyShelter.LOGGER.error("[紧急避险] 读取区块 {} 时出错（原版会重新生成这个区块），去掉模组附加的数据 {} 后读取成功，这些数据已暂存",
+                            pos, describe(stash), error);
+                    WorldGuard.record("CHUNK_DATA_STASHED", describe(stash), where, WorldGuard.message(error));
+                } else {
+                    WorldGuard.record("CHUNK_EVENT_SKIPPED", WorldGuard.message(error), where, WorldGuard.message(error));
+                }
+            });
+            return chunk;
+        }
+        EmergencyShelter.LOGGER.error("[紧急避险] 区块 {} 无法读取，原版会重新生成它。原始数据已保存到 {}", pos, saved, error);
+        WorldGuard.record("CHUNK_LOST", saved == null ? "?" : saved, where, WorldGuard.message(error));
+        throw WorldGuard.sneakyThrow(error);
     }
 
     /**

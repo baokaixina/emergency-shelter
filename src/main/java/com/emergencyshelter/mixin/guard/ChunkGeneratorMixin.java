@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import org.spongepowered.asm.mixin.Unique;
 import com.emergencyshelter.world.WorldgenGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -52,8 +53,18 @@ public abstract class ChunkGeneratorMixin {
     private boolean emergencyshelter$guardStructureStart(ChunkGenerator self, StructureSet.StructureSelectionEntry entry, StructureManager structureManager,
                                                          RegistryAccess registryAccess, RandomState random, StructureTemplateManager templates, long seed,
                                                          ChunkAccess chunk, ChunkPos chunkPos, SectionPos sectionPos, Operation<Boolean> original) {
-        ServerLevel level = ((StructureManagerAccessor) structureManager).emergencyshelter$level() instanceof ServerLevel s ? s : null;
+        ServerLevel level = emergencyshelter$levelOf(structureManager);
         return WorldgenGuard.tryGenerateStructure(entry.structure().value(), level, chunkPos,
                 () -> original.call(self, entry, structureManager, registryAccess, random, templates, seed, chunk, chunkPos, sectionPos));
+    }
+
+    /** 访问器没有生效（版本变化、和其它模组冲突）时返回 null，只是报告里少了维度信息。 */
+    @Unique
+    private static ServerLevel emergencyshelter$levelOf(StructureManager structureManager) {
+        try {
+            return ((StructureManagerAccessor) structureManager).emergencyshelter$level() instanceof ServerLevel s ? s : null;
+        } catch (Throwable t) {
+            return null;
+        }
     }
 }

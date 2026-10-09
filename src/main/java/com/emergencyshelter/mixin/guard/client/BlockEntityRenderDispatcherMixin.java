@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -22,7 +23,11 @@ public abstract class BlockEntityRenderDispatcherMixin {
         try {
             original.call(blockEntity, partialTick, pose, buffers);
         } catch (Throwable t) {
-            RenderGuard.onBlockEntityFailure(blockEntity, t, pose, depth);
+            try {
+                RenderGuard.onBlockEntityFailure(blockEntity, t, pose, depth);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

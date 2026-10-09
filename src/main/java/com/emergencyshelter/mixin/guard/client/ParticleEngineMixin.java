@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -19,7 +20,11 @@ public abstract class ParticleEngineMixin {
         try {
             original.call(particle);
         } catch (Throwable t) {
-            RenderGuard.onParticleFailure(particle, t);
+            try {
+                RenderGuard.onParticleFailure(particle, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 
@@ -29,7 +34,11 @@ public abstract class ParticleEngineMixin {
         try {
             original.call(particle, buffer, camera, partialTick);
         } catch (Throwable t) {
-            RenderGuard.onParticleFailure(particle, t);
+            try {
+                RenderGuard.onParticleFailure(particle, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
+            }
         }
     }
 }

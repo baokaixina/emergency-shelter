@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.LoadGuard;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -18,7 +19,7 @@ public abstract class BlockEntityMixin {
     private static BlockEntity emergencyshelter$loadStatic(BlockPos pos, BlockState state, CompoundTag tag, HolderLookup.Provider registries,
                                                           Operation<BlockEntity> original) {
         BlockEntity result = original.call(pos, state, tag, registries);
-        LoadGuard.afterLoadStatic(result, pos, state, tag);
+        Defense.quietly("LoadGuard.afterLoadStatic", () -> LoadGuard.afterLoadStatic(result, pos, state, tag));
         return result;
     }
 
@@ -27,7 +28,7 @@ public abstract class BlockEntityMixin {
         try {
             original.call(tag, registries);
         } catch (Throwable t) {
-            LoadGuard.rememberError(t);
+            Defense.quietly("LoadGuard.rememberError", () -> LoadGuard.rememberError(t));
             throw WorldGuard.sneakyThrow(t);
         }
     }

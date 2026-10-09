@@ -19,8 +19,9 @@ Minecraft 1.21.1 · NeoForge 的整合包安全网。
 - **加载崩溃自动修复**：下次启动时先换回最近改过的配置，还不行才跳过对应模组。
 - **存档和配置保护**：每次正常退出都会备份重要文件，文件读不出来时换回上次正常的版本；少了模组时进存档前自动备份。配置文件写坏或被删时自动恢复。
 - **画面、光影、材质包**：渲染出错只隐藏出错的那一部分；光影或材质包弄崩游戏时，下次启动自动关掉它们。
-- **地形生成、数据包、KubeJS / CraftTweaker 脚本、卡死、数据过大、实体过多**：只隔离出错的那一部分，不让整个存档进不去。
+- **地形生成、数据包、KubeJS / CraftTweaker 脚本、卡死、数据过大、实体过多**：只隔离出错的那一部分，不让整个存档进不去。一条配方坏了只跳过这一条。
 - **安全模式**：暂停整个世界（机器、生物、刷怪都不动），方便处理出问题的东西。
+- **只做防御**：紧急避险自己的处理代码万一出错，那一处就按原版处理，绝不会因为它多出一次崩溃。
 
 | 缺前置时照常启动 | 机器变成占位方块 |
 | :---: | :---: |
@@ -93,8 +94,9 @@ Removing a mod, a mod throwing errors, or a broken save or config file usually m
 - **Self-healing load crashes**: on the next launch it first rolls back recently changed configs, and only skips the mod if that doesn't help.
 - **Save and config protection**: important files are backed up on every clean exit and restored if they become unreadable; the world is backed up before loading with fewer mods. Corrupted or deleted configs are restored.
 - **Rendering, shaders and resource packs**: a render error only hides the broken element; shaders or resource packs that crash the game are disabled on the next launch.
-- **World generation, datapacks, KubeJS / CraftTweaker scripts, hangs, oversized data, entity overflow**: only the broken part is isolated instead of locking you out of the world.
+- **World generation, datapacks, KubeJS / CraftTweaker scripts, hangs, oversized data, entity overflow**: only the broken part is isolated instead of locking you out of the world. A single broken recipe only skips that recipe.
 - **Safe mode**: pauses the whole world (machines, mobs, spawning) so you can deal with whatever is broken.
+- **Defense only**: if Emergency Shelter's own handling code ever fails, that spot simply behaves like vanilla. It never adds a crash of its own.
 
 Screenshots are shown in the Chinese section above.
 

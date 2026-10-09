@@ -27,6 +27,7 @@
     "NbtIoMixin",
     "PacketEncoderMixin",
     "PlayerDataStorageMixin",
+    "RecipeManagerMixin",
     "RegionFileStorageMixin",
     "SimpleReloadInstanceMixin",
     "StructureManagerAccessor"

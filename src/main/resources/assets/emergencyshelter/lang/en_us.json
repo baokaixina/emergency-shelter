@@ -128,6 +128,7 @@
   "emergencyshelter.guard.kind.CHUNK_TRIMMED": "The packet for %s exceeded the network limit; it was sent without some block entity display data",
   "emergencyshelter.guard.kind.PACKET_SKIPPED": "Packet %s exceeded the network limit and was dropped instead of disconnecting the player",
   "emergencyshelter.guard.kind.DATA_RELOAD_SKIPPED": "Data loader %s failed and was skipped; all other data loaded normally",
+  "emergencyshelter.guard.kind.RECIPE_SKIPPED": "Recipe %s failed to load and was skipped; all other recipes loaded normally",
   "emergencyshelter.guard.kind.DATA_LARGE": "World data %s is unusually large",
   "emergencyshelter.guard.kind.DATA_GROWTH": "World data %s is growing fast",
   "emergencyshelter.guard.kind.CHUNK_OVERSIZED": "Chunk data %s is oversized",

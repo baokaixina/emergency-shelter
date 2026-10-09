@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.salvage.LenientRegistries;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -26,6 +27,6 @@ public abstract class RegistryDataLoaderMixin {
 
     @Inject(method = "logErrors", at = @At("HEAD"))
     private static void emergencyshelter$captureErrors(Map<ResourceKey<?>, Exception> errors, CallbackInfo ci) {
-        LenientRegistries.captureErrors(errors);
+        Defense.quietly("LenientRegistries.captureErrors", () -> LenientRegistries.captureErrors(errors));
     }
 }

@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.DeepNbt;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -22,15 +23,19 @@ public abstract class LevelStorageSourceMixin {
         try {
             return original.call(file);
         } catch (Throwable t) {
-            if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
-                throw WorldGuard.sneakyThrow(t);
+            try {
+                if (!WorldGuard.enabled() || !DeepNbt.isLimitProblem(t)) {
+                    throw WorldGuard.sneakyThrow(t);
+                }
+                // 完整读取时会记录并备份，这里只取需要的部分
+                CompoundTag tag = DeepNbt.readFile(file).tag();
+                CompoundTag data = tag.getCompound("Data");
+                data.remove("Player");
+                data.remove("WorldGenSettings");
+                return tag;
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
             }
-            // 完整读取时会记录并备份，这里只取需要的部分
-            CompoundTag tag = DeepNbt.readFile(file).tag();
-            CompoundTag data = tag.getCompound("Data");
-            data.remove("Player");
-            data.remove("WorldGenSettings");
-            return tag;
         }
     }
 }

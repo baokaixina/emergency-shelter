@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard.client;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.client.RenderGuard;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -19,10 +20,14 @@ public abstract class GameRendererMixin {
         try {
             original.call(screen, graphics, mouseX, mouseY, partialTick);
         } catch (Throwable t) {
-            while (RenderGuard.depth(graphics.pose()) > Math.max(1, depth)) {
-                graphics.pose().popPose();
+            try {
+                while (RenderGuard.depth(graphics.pose()) > Math.max(1, depth)) {
+                    graphics.pose().popPose();
+                }
+                RenderGuard.onScreenFailure(screen, t);
+            } catch (Throwable own) {
+                throw Defense.fallback(t, own);
             }
-            RenderGuard.onScreenFailure(screen, t);
         }
     }
 }

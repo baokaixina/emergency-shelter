@@ -1,5 +1,6 @@
 package com.emergencyshelter.mixin.guard;
 
+import com.emergencyshelter.Defense;
 import com.emergencyshelter.world.AttachmentStash;
 import com.emergencyshelter.world.WorldGuard;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
@@ -39,7 +40,7 @@ public abstract class AttachmentHolderMixin implements AttachmentStash.Holder {
 
     @Inject(method = "deserializeAttachments", at = @At("HEAD"))
     private void emergencyshelter$beforeDeserialize(HolderLookup.Provider provider, CompoundTag tag, CallbackInfo ci) {
-        AttachmentStash.beforeDeserialize(this, tag);
+        Defense.quietly("AttachmentStash.beforeDeserialize", () -> AttachmentStash.beforeDeserialize(this, tag));
     }
 
     @WrapOperation(method = "deserializeAttachments", at = @At(value = "INVOKE",
@@ -49,13 +50,13 @@ public abstract class AttachmentHolderMixin implements AttachmentStash.Holder {
         try {
             return original.call(serializer, holder, data, provider);
         } catch (Throwable t) {
-            AttachmentStash.failed(this, key, data, t);
+            Defense.quietly("AttachmentStash.failed", () -> AttachmentStash.failed(this, key, data, t));
             throw WorldGuard.sneakyThrow(t);
         }
     }
 
     @ModifyReturnValue(method = "serializeAttachments", at = @At("RETURN"))
     private CompoundTag emergencyshelter$afterSerialize(CompoundTag result) {
-        return AttachmentStash.merge(this, result);
+        return Defense.quietly("AttachmentStash.merge", () -> AttachmentStash.merge(this, result), result);
     }
 }
