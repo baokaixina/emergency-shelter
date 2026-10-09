@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.emergencyshelter.mixin.compat",
+  "plugin": "com.emergencyshelter.mixin.compat.CompatMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

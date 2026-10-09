@@ -1,0 +1,48 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.emergencyshelter.mixin.guard",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AttachmentHolderMixin",
+    "AttachmentInternalsMixin",
+    "BlockEntityDataPacketMixin",
+    "BlockEntityInfoAccessor",
+    "BlockEntityInfoMixin",
+    "BlockEntityMixin",
+    "BoundTickingBlockEntityMixin",
+    "ChunkGeneratorMixin",
+    "ChunkMapMixin",
+    "ChunkPacketDataAccessor",
+    "ChunkStatusTasksMixin",
+    "DimensionDataStorageMixin",
+    "EntityMixin",
+    "FeatureSorterMixin",
+    "InventoryMixin",
+    "LevelChunkMixin",
+    "LevelMixin",
+    "LevelStorageAccessMixin",
+    "LevelStorageSourceMixin",
+    "MinecraftServerMixin",
+    "NbtIoMixin",
+    "PacketEncoderMixin",
+    "PlayerDataStorageMixin",
+    "RegionFileStorageMixin",
+    "SimpleReloadInstanceMixin",
+    "StructureManagerAccessor"
+  ],
+  "client": [
+    "client.BlockEntityRenderDispatcherMixin",
+    "client.EntityRenderDispatcherMixin",
+    "client.GameRendererMixin",
+    "client.GuiGraphicsMixin",
+    "client.GuiLayerManagerMixin",
+    "client.MinecraftMixin",
+    "client.ParticleEngineMixin",
+    "client.PoseStackAccessor",
+    "client.ScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

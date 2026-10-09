@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="紧急避险 ${mod_name}"
+authors="Emergency Shelter"
+description='''
+整合包安全网：模组被删除时自动禁用缺少前置的模组，保证能进入存档；
+被删除模组的物品、方块、实体会以占位形式完整保存，模组装回后自动还原。
+运行出错的方块、实体、物品会被隔离而不是让游戏崩溃；存档数据和配置文件损坏时换回上次正常的版本；
+启动变慢或卡住时指出是哪个模组。
+光影、材质包、渲染、生成地形、数据包、KubeJS 脚本出错，卡死，数据过大，实体过多，联机数据包过大：
+尽量只隔离出错的那一部分，下次启动自动处理，而不是让存档进不去。
+'''
+
+[[mixins]]
+config="${mod_id}.mixins.json"
+
+[[mixins]]
+config="${mod_id}.compat.mixins.json"
+
+[[mixins]]
+config="${mod_id}.guard.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"

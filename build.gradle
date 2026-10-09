@@ -1,0 +1,110 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// early：在 NeoForge 扫描 mods 文件夹之前运行的部分（服务层，不能引用任何游戏类）
+// main ：普通的游戏内模组（占位物品、避险箱、提示界面）
+sourceSets {
+    early
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    addModdingDependenciesTo(sourceSets.early)
+
+    runs {
+        client {
+            client()
+        }
+        // 开发测试用：直接进入 run/saves/test
+        clientWorld {
+            client()
+            programArguments.addAll('--quickPlaySingleplayer', 'test')
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    filteringCharset = 'UTF-8'
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// 游戏内模组 jar（内部使用，会被嵌入最终 jar）
+tasks.named('jar', Jar) {
+    archiveClassifier = 'mod'
+}
+
+// 最终发布的 jar：外层是 early 服务，内嵌游戏内模组 jar
+var shelterJar = tasks.register('shelterJar', Jar) {
+    group = 'build'
+    archiveClassifier = ''
+    from sourceSets.early.output
+    from(tasks.named('jar').flatMap { it.archiveFile }) {
+        into 'META-INF/emergencyshelter'
+        rename { 'emergencyshelter-mod.jar' }
+    }
+    manifest {
+        attributes(
+                'Automatic-Module-Name': 'emergencyshelter.early',
+                'Implementation-Title': 'Emergency Shelter (early)',
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn shelterJar
+}
+
+// 本地故障测试模组（不在仓库里，有就加载）
+if (file('testmod.gradle').exists()) {
+    apply from: 'testmod.gradle'
+}

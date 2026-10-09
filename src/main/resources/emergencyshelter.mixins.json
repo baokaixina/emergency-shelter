@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.emergencyshelter.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemStackMixin",
+    "ChunkSerializerMixin",
+    "EntityTypeMixin",
+    "PlayerListMixin",
+    "RegistryDataLoaderMixin",
+    "LevelChunkInvoker"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
