@@ -4,11 +4,14 @@ import cpw.mods.niofs.union.UnionFileSystem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -553,18 +556,18 @@ public final class EarlyShelter {
                 bytes = in.readAllBytes();
             }
         }
-        String hash = sha256(bytes).substring(0, 16);
+        String fullHash = sha256(bytes);
+        String hash = fullHash.substring(0, 16);
         Path cacheDir = ShelterFiles.dir().resolve(".cache");
         Files.createDirectories(cacheDir);
-        String fileName = "emergencyshelter-mod-" + hash + ".jar";
-        Path target = cacheDir.resolve(fileName);
-        if (!Files.isRegularFile(target) || Files.size(target) != bytes.length) {
-            Path tmp = cacheDir.resolve(fileName + ".tmp");
-            Files.write(tmp, bytes);
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+        String baseName = "emergencyshelter-mod-" + hash;
+        Path target = cacheDir.resolve(baseName + ".jar");
+        if (!cacheIntact(target, bytes.length, fullHash)) {
+            target = writeCache(cacheDir, target, baseName, bytes);
         }
+        Path keep = target;
         try (Stream<Path> old = Files.list(cacheDir)) {
-            old.filter(p -> p.getFileName().toString().startsWith("emergencyshelter-mod-") && !p.equals(target))
+            old.filter(p -> p.getFileName().toString().startsWith("emergencyshelter-mod-") && !p.equals(keep))
                     .forEach(p -> {
                         try {
                             Files.deleteIfExists(p);
@@ -573,7 +576,65 @@ public final class EarlyShelter {
                         }
                     });
         }
-        pipeline.addPath(target, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+        pipeline.addPath(keep, ModFileDiscoveryAttributes.DEFAULT, IncompatibleFileReporting.ERROR);
+    }
+
+    private static boolean cacheIntact(Path file, long size, String hash) {
+        try {
+            return Files.isRegularFile(file) && Files.size(file) == size && hash.equals(sha256(file));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IOException(e);
+        }
+    }
+
+    private static Path writeCache(Path cacheDir, Path target, String baseName, byte[] bytes) throws IOException {
+        Path tmp = Files.createTempFile(cacheDir, baseName + "-", ".tmp");
+        try {
+            try (FileChannel channel = FileChannel.open(tmp, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                while (buffer.hasRemaining()) {
+                    channel.write(buffer);
+                }
+                channel.force(true);
+            }
+            boolean replacing = Files.isRegularFile(target);
+            try {
+                moveIntoPlace(tmp, target);
+                if (replacing) {
+                    EarlyLog.LOG.warn("[紧急避险] 游戏内部分的缓存文件内容损坏（大小相同），已重新解压：{}", target);
+                }
+                return target;
+            } catch (IOException replaceFailed) {
+                Path alternative = cacheDir.resolve(baseName + "-" + Long.toHexString(System.nanoTime()) + ".jar");
+                moveIntoPlace(tmp, alternative);
+                EarlyLog.LOG.warn("[紧急避险] 无法替换缓存文件 {}，已改用新副本 {}", target, alternative);
+                return alternative;
+            }
+        } finally {
+            Files.deleteIfExists(tmp);
+        }
+    }
+
+    private static void moveIntoPlace(Path tmp, Path target) throws IOException {
+        try {
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException atomicFailed) {
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     @Nullable
